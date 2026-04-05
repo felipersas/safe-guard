@@ -1,0 +1,255 @@
+\documentclass[a4paper,12pt]{article}
+
+% Pacotes essenciais
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[brazil]{babel}
+\usepackage{geometry}
+\usepackage{amsmath}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{enumitem}
+\usepackage{titlesec}
+\usepackage{fancyhdr}
+\usepackage{hyperref}
+\usepackage{xcolor}
+\usepackage{float}
+
+% Configuração de margens
+\geometry{
+    top=2.5cm,
+    bottom=2.5cm,
+    left=3cm,
+    right=2.5cm,
+    headheight=15pt
+}
+
+% Configuração de cabeçalho e rodapé
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[R]{\thepage}
+\renewcommand{\headrulewidth}{0pt}
+
+% Configuração de títulos
+\titleformat{\section}{\large\bfseries}{\thesection}{1em}{}
+\titleformat{\subsection}{\normalsize\bfseries}{\thesubsection}{1em}{}
+\titleformat{\subsubsection}{\normalsize\bfseries\itshape}{\thesubsubsection}{1em}{}
+
+% Configuração de links
+\hypersetup{
+    colorlinks=true,
+    linkcolor=black,
+    citecolor=black,
+    urlcolor=blue
+}
+
+% Título
+\title{\textbf{SafeGuard}\\[0.5em]
+\large Sistema de Monitoramento e Detecção de Quedas para Idosos}
+\author{
+    Felipe Marques \and Gabriel Ribeiro \and Pedro Dias
+}
+\date{\today}
+
+\begin{document}
+
+\maketitle
+
+\begin{center}
+\textbf{Documento de Projeto Técnico}
+\end{center}
+
+\vspace{1cm}
+
+\tableofcontents
+
+\newpage
+
+%==============================================================================
+\section{Introdução e Contexto}
+%==============================================================================
+
+Com o envelecimento da população, a segurança de idosos em ambientes domésticos ou institucionais torna-se uma preocupação crítica. Quedas são uma das principais causas de lesões e complicações de saúde nessa faixa etária. Muitas vezes, a ausência de um socorro rápido pode agravar as consequências de uma queda.
+
+Este projeto propõe o desenvolvimento de um protótipo IoT (\textit{Internet of Things}) acessível e escalável para detectar quedas em tempo real e notificar cuidadores ou familiares.
+
+%==============================================================================
+\section{Definição do Problema}
+%==============================================================================
+
+A principal questão que este projeto visa resolver é a \textbf{incerteza e a demora no socorro} após um idoso sofrer uma queda, especialmente quando ele está sozinho ou incapaz de acionar ajuda manualmente.
+
+\subsection{Problemas Específicos}
+
+\begin{itemize}[leftmargin=2cm]
+    \item \textbf{Isolamento:} Idosos que moram sozinhos ficam vulneráveis em situações de emergência.
+    \item \textbf{Latência de Comunicação:} A falta de um sistema automático faz com que o tempo entre o incidente e o socorro seja indeterminado, aumentando riscos de saúde.
+    \item \textbf{Falta de Dados:} Não há registro histórico da frequência ou intensidade dos movimentos/queda para análise médica preventiva.
+\end{itemize}
+
+%==============================================================================
+\section{Solução Proposta}
+%==============================================================================
+
+O \textbf{SafeGuard} consiste em uma pulseira inteligente (\textit{wearable}) equipada com sensores de movimento e velocidade. O dispositivo monitora os padrões de aceleração do usuário continuamente. Ao detectar um padrão brusco de movimento seguido de ausência de movimento (característico de uma queda), o sistema dispara um alerta automaticamente.
+
+\subsection{Fluxo da Solução}
+
+\begin{enumerate}[leftmargin=2cm]
+    \item \textbf{Detecção:} O sensor na pulseira identifica variação brusca de velocidade/aceleração (queda).
+    \item \textbf{Processamento:} O microcontrolador analisa os dados e confirma o evento.
+    \item \textbf{Comunicação:} O dado é enviado via protocolo MQTT.
+    \item \textbf{Visualização:} Os dados são armazenados no \textbf{InfluxDB} e visualizados em tempo real no \textbf{Grafana}.
+    \item \textbf{Ação:} O \textbf{Node-RED} recebe o alerta e dispara uma notificação (simulada ou real) para o cuidador.
+\end{enumerate}
+
+%==============================================================================
+\section{Stack Tecnológica}
+%==============================================================================
+
+Para a arquitetura do sistema, utiliza-se um \textit{stack} moderno, leve e amplamente utilizado no mercado de IoT:
+
+\begin{itemize}[leftmargin=2cm]
+    \item \textbf{MQTT} (\textit{Message Queuing Telemetry Transport}): Protocolo de comunicação leve, ideal para dispositivos IoT com largura de banda limitada. Será o barramento de mensagens central.
+
+    \item \textbf{InfluxDB:} Banco de dados de séries temporais (\textit{Time Series Database}). Perfeito para armazenar leituras de sensores contínuos (velocidade, aceleração X, Y, Z) com alta performance.
+
+    \item \textbf{Grafana:} Plataforma de análise e visualização interativa. Permite a criação de \textit{dashboards} para monitorar a saúde do dispositivo e histórico de alertas.
+
+    \item \textbf{Node-RED:} Ferramenta de desenvolvimento baseada em fluxo para conectar dispositivos, APIs e serviços online. Atuará como o ``cérebro'' lógico para roteamento de alertas.
+\end{itemize}
+
+%==============================================================================
+\section{Especificação de Hardware}
+%==============================================================================
+
+Como o projeto será desenvolvido em ambiente de simulação, o hardware foi selecionado com base nos componentes disponíveis no \textbf{Wokwi}.
+
+\subsection{Microcontrolador}
+
+\textbf{ESP32:} Escolhido por possuir Wi-Fi e Bluetooth integrados (necessários para o MQTT) e por ser o microcontrolador mais robusto disponível no Wokwi para este fim.
+
+\subsection{Sensores (Simulação de Comportamento)}
+
+No ambiente Wokwi, utiliza-se a API de código para simular o comportamento físico de um sensor de velocidade/aceleração.
+
+\subsubsection{Lógica de Simulação}
+
+Como o Wokwi possui limitações de sensores físicos 3D, utilizou-se o código C++ no ESP32 para gerar dados de \textbf{Acelerômetro (IMU -- Unidade de Medição Inercial)}.
+
+\begin{itemize}[leftmargin=2cm]
+    \item \textbf{Simulação de ``Velocidade'':} A velocidade será derivada matematicamente a partir da aceleração no código, ou simulam-se picos de aceleração para representar a queda.
+
+    \item \textbf{Interação:} Utiliza-se um \textbf{Potenciômetro} ou um \textbf{Botão} no Wokwi para simular o ``evento de queda'' durante os testes.
+
+    \begin{itemize}
+        \item \textit{Exemplo:} Girar o potenciômetro para o máximo simula uma aceleração brusca (impacto), disparando o fluxo de alerta.
+    \end{itemize}
+\end{itemize}
+
+%==============================================================================
+\section{Arquitetura do Sistema}
+%==============================================================================
+
+O fluxo de dados segue a seguinte topologia:
+
+\subsection{Publisher (ESP32 -- Wokwi)}
+
+\begin{itemize}
+    \item Lê o estado simulado do sensor/botão.
+    \item Verifica condição de queda (ex: Aceleração $>$ Limite).
+    \item Publica nos tópicos MQTT:
+    \begin{itemize}
+        \item \texttt{safeguard/queda/alerta} (Status: ON/OFF)
+        \item \texttt{safeguard/sensores/velocidade} (Dados numéricos)
+    \end{itemize}
+\end{itemize}
+
+\subsection{Broker MQTT (Mosquitto/HiveMQ -- Servidor)}
+
+\begin{itemize}
+    \item Recebe as mensagens e as distribui para os inscritos (\textit{Subscribers}).
+\end{itemize}
+
+\subsection{Subscriber \& Storage (Node-RED + InfluxDB)}
+
+\begin{itemize}
+    \item O Node-RED assina o tópico MQTT.
+    \item Os dados numéricos são gravados no InfluxDB.
+    \item Se o tópico de alerta for ``ON'', o Node-RED envia uma notificação (\textit{Debug node} ou E-mail simulado).
+\end{itemize}
+
+\subsection{Visualization (Grafana)}
+
+\begin{itemize}
+    \item Conecta ao InfluxDB.
+    \item Exibe gráficos de velocidade ao longo do tempo.
+    \item Exibe um painel de ``Status do Sistema'' (Normal vs. Queda Detectada).
+\end{itemize}
+
+%==============================================================================
+\section{Detalhamento da Lógica de Detecção}
+%==============================================================================
+
+Para identificar a queda, o \textit{firmware} no ESP32 implementa uma lógica simplificada de detecção baseada em vetor:
+
+\begin{enumerate}[leftmargin=2cm]
+    \item \textbf{Leitura Contínua:} O sistema lê os valores de aceleração simulados (Eixos X, Y, Z).
+
+    \item \textbf{Cálculo do Módulo:} Calcula-se a magnitude do vetor aceleração:
+    \[
+    A = \sqrt{x^2 + y^2 + z^2}
+    \]
+
+    \item \textbf{Comparação (\textit{Threshold}):}
+    \begin{itemize}
+        \item Se $A > \text{LIMITE\_ALTO}$ (ex: 3g): Indica impacto súbito (possível queda).
+        \item Seguido de $A < \text{LIMITE\_BAIXO}$ (ex: 0,5g) por alguns segundos: Indica imobilidade pós-impacto.
+    \end{itemize}
+
+    \item \textbf{Ação:} Se as condições acima forem verdadeiras, publica \texttt{QUEDA\_DETECTADA} no MQTT.
+\end{enumerate}
+
+%==============================================================================
+\section{Entregáveis do Projeto}
+%==============================================================================
+
+\begin{enumerate}[leftmargin=2cm]
+    \item \textbf{Código-fonte (\textit{Firmware}):} Código \texttt{.ino} para ESP32 rodando no simulador Wokwi.
+    \item \textbf{Fluxo Node-RED:} Exportação JSON do fluxo de automação.
+    \item \textbf{Dashboard Grafana:} Configuração dos painéis de monitoramento.
+    \item \textbf{Documentação Técnica:} Este documento e manual de uso da simulação.
+\end{enumerate}
+
+%==============================================================================
+\section{Resumo das Tecnologias e Ferramentas}
+%==============================================================================
+
+\begin{table}[H]
+\centering
+\caption{Componentes do Sistema}
+\label{tab:componentes}
+\begin{tabular}{>{\bfseries}l l l}
+\toprule
+\textbf{Componente} & \textbf{Tecnologia/Ferramenta} & \textbf{Função no Projeto} \\
+\midrule
+Hardware & ESP32 (Wokwi) & Coleta de dados e envio via Wi-Fi \\
+Sensor & Simulação Código + Potenciômetro & Simular aceleração/velocidade e evento de queda \\
+Protocolo & MQTT & Transporte leve das mensagens entre hardware e cloud \\
+Backend/Logic & Node-RED & Processamento de regras e disparo de alertas \\
+Banco de Dados & InfluxDB & Armazenamento histórico das leituras (Série Temporal) \\
+Frontend & Grafana & Visualização gráfica dos dados e status \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+%==============================================================================
+\section{Considerações Finais}
+%==============================================================================
+
+Este documento serve como guia inicial para o desenvolvimento do projeto SafeGuard. A próxima etapa consiste em configurar o ambiente Wokwi e subir as instâncias do Broker MQTT, Node-RED, InfluxDB e Grafana -- podendo estas serem instaladas localmente via Docker ou em nuvem.
+
+O sistema proposto oferece uma solução acessível e escalável para um problema crítico de saúde pública, utilizando tecnologias consolidadas no mercado de IoT e permitindo futuras expansões como integração com serviços de emergência e análise preditiva de quedas.
+
+\end{document}

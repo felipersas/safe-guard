@@ -1,0 +1,7 @@
+{
+  "tool_name": "Read",
+  "tool_input_preview": "{\"file_path\":\"/Users/felipersas/Documents/Facul/IOT/safeguard-documento.pdf\",\"pages\":\"1-5\"}",
+  "error": "pdftoppm is not installed. Install poppler-utils (e.g. `brew install poppler` or `apt-get install poppler-utils`) to enable PDF page rendering.",
+  "timestamp": "2026-04-05T15:48:30.815Z",
+  "retry_count": 1
+}

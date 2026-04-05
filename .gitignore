@@ -1,0 +1,11 @@
+# Runtime data
+mosquitto/data/
+mosquitto/log/
+influxdb/data/
+grafana/data/
+
+# Node-RED credentials
+nodered/data/flows_cred.json
+
+# Environment
+.env

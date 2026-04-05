@@ -1,0 +1,361 @@
+[
+    {
+        "id": "tab_sg",
+        "type": "tab",
+        "label": "SafeGuard - Monitoramento",
+        "disabled": false,
+        "info": "SafeGuard - Sistema de Monitoramento e Deteccao de Quedas",
+        "env": []
+    },
+
+    {
+        "id": "cfg_broker",
+        "type": "mqtt-broker",
+        "name": "Mosquitto SafeGuard",
+        "broker": "mosquitto",
+        "port": "1883",
+        "clientid": "nodered-safeguard",
+        "autoConnect": true,
+        "usetls": false,
+        "protocolVersion": "4",
+        "keepalive": "60",
+        "cleansession": true,
+        "credentials": {}
+    },
+
+    {
+        "id": "sg_comment_1",
+        "type": "comment",
+        "z": "tab_sg",
+        "name": "📡 Pipeline: Dados do Acelerometro → InfluxDB",
+        "info": "Recebe dados brutos de aceleracao (X, Y, Z, magnitude) do ESP32\ne grava no InfluxDB como time series.",
+        "x": 240,
+        "y": 40,
+        "wires": []
+    },
+    {
+        "id": "nd_mqtt_acel",
+        "type": "mqtt in",
+        "z": "tab_sg",
+        "name": "Acelerometro (X,Y,Z,Mag)",
+        "topic": "safeguard/sensores/aceleracao",
+        "qos": "1",
+        "datatype": "json",
+        "broker": "cfg_broker",
+        "nl": false,
+        "rap": false,
+        "inputs": 0,
+        "x": 180,
+        "y": 80,
+        "wires": [
+            ["nd_fn_acel"]
+        ]
+    },
+    {
+        "id": "nd_fn_acel",
+        "type": "function",
+        "z": "tab_sg",
+        "name": "Aceleracao → Influx Line Protocol",
+        "func": "const d = msg.payload;\nconst dev = d.device || 'esp32-001';\nconst ts = Date.now();\n\nmsg.headers = {\n    'Authorization': 'Token ' + env.get('INFLUXDB_TOKEN'),\n    'Content-Type': 'text/plain; charset=utf-8'\n};\nmsg.url = env.get('INFLUXDB_URL') + '/api/v2/write?org=safeguard&bucket=sensors&precision=ms';\nmsg.method = 'POST';\nmsg.payload = 'aceleracao,device=' + dev + ' x=' + d.x + ',y=' + d.y + ',z=' + d.z + ',magnitude=' + d.magnitude + ' ' + ts;\n\nreturn msg;",
+        "outputs": 1,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 460,
+        "y": 80,
+        "wires": [
+            ["nd_http_acel"]
+        ]
+    },
+    {
+        "id": "nd_http_acel",
+        "type": "http request",
+        "z": "tab_sg",
+        "name": "Write InfluxDB",
+        "method": "use",
+        "ret": "txt",
+        "paytoqs": false,
+        "url": "",
+        "tls": "",
+        "persist": false,
+        "proxy": "",
+        "insecureHTTPParser": false,
+        "authType": "",
+        "senderr": false,
+        "headers": [],
+        "x": 700,
+        "y": 80,
+        "wires": [
+            ["nd_dbg_acel"]
+        ]
+    },
+    {
+        "id": "nd_dbg_acel",
+        "type": "debug",
+        "z": "tab_sg",
+        "name": "Aceleracao OK",
+        "active": false,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": true,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "payload",
+        "statusType": "auto",
+        "x": 910,
+        "y": 80,
+        "wires": []
+    },
+
+    {
+        "id": "sg_comment_2",
+        "type": "comment",
+        "z": "tab_sg",
+        "name": "📡 Pipeline: Velocidade → InfluxDB",
+        "info": "Recebe dados de velocidade derivada e grava no InfluxDB.",
+        "x": 200,
+        "y": 140,
+        "wires": []
+    },
+    {
+        "id": "nd_mqtt_vel",
+        "type": "mqtt in",
+        "z": "tab_sg",
+        "name": "Velocidade",
+        "topic": "safeguard/sensores/velocidade",
+        "qos": "1",
+        "datatype": "json",
+        "broker": "cfg_broker",
+        "nl": false,
+        "rap": false,
+        "inputs": 0,
+        "x": 150,
+        "y": 180,
+        "wires": [
+            ["nd_fn_vel"]
+        ]
+    },
+    {
+        "id": "nd_fn_vel",
+        "type": "function",
+        "z": "tab_sg",
+        "name": "Velocidade → Influx Line Protocol",
+        "func": "const d = msg.payload;\nconst dev = d.device || 'esp32-001';\nconst ts = Date.now();\n\nmsg.headers = {\n    'Authorization': 'Token ' + env.get('INFLUXDB_TOKEN'),\n    'Content-Type': 'text/plain; charset=utf-8'\n};\nmsg.url = env.get('INFLUXDB_URL') + '/api/v2/write?org=safeguard&bucket=sensors&precision=ms';\nmsg.method = 'POST';\nmsg.payload = 'velocidade,device=' + dev + ' valor=' + (d.velocidade || d.value || 0) + ' ' + ts;\n\nreturn msg;",
+        "outputs": 1,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 440,
+        "y": 180,
+        "wires": [
+            ["nd_http_vel"]
+        ]
+    },
+    {
+        "id": "nd_http_vel",
+        "type": "http request",
+        "z": "tab_sg",
+        "name": "Write InfluxDB",
+        "method": "use",
+        "ret": "txt",
+        "paytoqs": false,
+        "url": "",
+        "tls": "",
+        "persist": false,
+        "proxy": "",
+        "insecureHTTPParser": false,
+        "authType": "",
+        "senderr": false,
+        "headers": [],
+        "x": 700,
+        "y": 180,
+        "wires": [
+            ["nd_dbg_vel"]
+        ]
+    },
+    {
+        "id": "nd_dbg_vel",
+        "type": "debug",
+        "z": "tab_sg",
+        "name": "Velocidade OK",
+        "active": false,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": true,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "payload",
+        "statusType": "auto",
+        "x": 910,
+        "y": 180,
+        "wires": []
+    },
+
+    {
+        "id": "sg_comment_3",
+        "type": "comment",
+        "z": "tab_sg",
+        "name": "🚨 Pipeline: Alerta de Queda → Notificacao + InfluxDB",
+        "info": "Recebe alertas de queda (ON/OFF), registra no InfluxDB\ne exibe no debug. Pode ser expandido para email, SMS, etc.",
+        "x": 270,
+        "y": 240,
+        "wires": []
+    },
+    {
+        "id": "nd_mqtt_alerta",
+        "type": "mqtt in",
+        "z": "tab_sg",
+        "name": "Alerta Queda",
+        "topic": "safeguard/queda/alerta",
+        "qos": "1",
+        "datatype": "utf8",
+        "broker": "cfg_broker",
+        "nl": false,
+        "rap": false,
+        "inputs": 0,
+        "x": 150,
+        "y": 300,
+        "wires": [
+            ["nd_fn_influx_alerta"],
+            ["nd_switch_alerta"]
+        ]
+    },
+    {
+        "id": "nd_fn_influx_alerta",
+        "type": "function",
+        "z": "tab_sg",
+        "name": "Alerta → Influx Line Protocol",
+        "func": "const status = msg.payload;\nconst ts = Date.now();\n\nmsg.headers = {\n    'Authorization': 'Token ' + env.get('INFLUXDB_TOKEN'),\n    'Content-Type': 'text/plain; charset=utf-8'\n};\nmsg.url = env.get('INFLUXDB_URL') + '/api/v2/write?org=safeguard&bucket=sensors&precision=ms';\nmsg.method = 'POST';\nmsg.payload = 'alerta,device=esp32-001 status=\"' + status + '\" ' + ts;\n\nreturn msg;",
+        "outputs": 1,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 440,
+        "y": 280,
+        "wires": [
+            ["nd_http_alerta"]
+        ]
+    },
+    {
+        "id": "nd_http_alerta",
+        "type": "http request",
+        "z": "tab_sg",
+        "name": "Write InfluxDB",
+        "method": "use",
+        "ret": "txt",
+        "paytoqs": false,
+        "url": "",
+        "tls": "",
+        "persist": false,
+        "proxy": "",
+        "insecureHTTPParser": false,
+        "authType": "",
+        "senderr": false,
+        "headers": [],
+        "x": 700,
+        "y": 280,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "nd_switch_alerta",
+        "type": "switch",
+        "z": "tab_sg",
+        "name": "ON / OFF",
+        "property": "payload",
+        "propertyType": "msg",
+        "rules": [
+            {
+                "t": "eq",
+                "v": "ON",
+                "vt": "str"
+            },
+            {
+                "t": "eq",
+                "v": "OFF",
+                "vt": "str"
+            }
+        ],
+        "checkall": "true",
+        "repair": false,
+        "outputs": 2,
+        "x": 350,
+        "y": 380,
+        "wires": [
+            ["nd_fn_alerta_on"],
+            ["nd_fn_alerta_off"]
+        ]
+    },
+    {
+        "id": "nd_fn_alerta_on",
+        "type": "function",
+        "z": "tab_sg",
+        "name": "Formatar Alerta ON",
+        "func": "msg.payload = {\n    alerta: 'QUEDA DETECTADA',\n    timestamp: new Date().toISOString(),\n    device: 'esp32-001',\n    acao: 'Notificar cuidador'\n};\nmsg.topic = 'QUEDA DETECTADA!';\nreturn msg;",
+        "outputs": 1,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 560,
+        "y": 360,
+        "wires": [
+            ["nd_dbg_alerta_on"]
+        ]
+    },
+    {
+        "id": "nd_fn_alerta_off",
+        "type": "function",
+        "z": "tab_sg",
+        "name": "Formatar Status OFF",
+        "func": "msg.payload = {\n    status: 'NORMAL',\n    timestamp: new Date().toISOString(),\n    device: 'esp32-001',\n    acao: 'Nenhuma acao necessaria'\n};\nmsg.topic = 'Status Normal';\nreturn msg;",
+        "outputs": 1,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 560,
+        "y": 420,
+        "wires": [
+            ["nd_dbg_alerta_off"]
+        ]
+    },
+    {
+        "id": "nd_dbg_alerta_on",
+        "type": "debug",
+        "z": "tab_sg",
+        "name": "🚨 QUEDA DETECTADA!",
+        "active": true,
+        "tosidebar": true,
+        "console": true,
+        "tostatus": true,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "topic",
+        "statusType": "msg",
+        "x": 800,
+        "y": 360,
+        "wires": []
+    },
+    {
+        "id": "nd_dbg_alerta_off",
+        "type": "debug",
+        "z": "tab_sg",
+        "name": "✅ Status Normal",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": true,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "topic",
+        "statusType": "msg",
+        "x": 790,
+        "y": 420,
+        "wires": []
+    }
+]
