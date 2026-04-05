@@ -9,3 +9,6 @@ nodered/data/flows_cred.json
 
 # Environment
 .env
+
+# oh my claude-code memory
+.omc/
