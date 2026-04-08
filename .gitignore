@@ -11,4 +11,5 @@ nodered/data/flows_cred.json
 .env
 
 # oh my claude-code memory
-.omc/
+.omc/*
+.ai-jail

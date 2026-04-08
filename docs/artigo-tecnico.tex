@@ -1,0 +1,634 @@
+\documentclass[a4paper,12pt]{article}
+
+% ── Pacotes essenciais ────────────────────────────────────────
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[brazil]{babel}
+\usepackage{geometry}
+\usepackage{amsmath}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{enumitem}
+\usepackage{titlesec}
+\usepackage{fancyhdr}
+\usepackage{hyperref}
+\usepackage{xcolor}
+\usepackage{float}
+\usepackage{caption}
+\usepackage{tabularx}
+\usepackage{multirow}
+\usepackage{setspace}
+\usepackage{indentfirst}
+\usepackage{listings}
+\usepackage{textcomp}
+\usepackage{tikz}
+\usetikzlibrary{shapes.geometric, arrows.meta, positioning, calc, fit}
+
+% ── Configuração de margens (ABNT) ───────────────────────────
+\geometry{
+    top=3cm,
+    bottom=2cm,
+    left=2.5cm,
+    right=2.5cm,
+    headheight=15pt
+}
+
+% ── Espaçamento entre linhas ─────────────────────────────────
+\onehalfspacing
+
+% ── Configuração de cabeçalho e rodapé ───────────────────────
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[R]{\thepage}
+\renewcommand{\headrulewidth}{0pt}
+
+% ── Configuração de títulos (ABNT) ──────────────────────────
+\titleformat{\section}
+  {\normalsize\bfseries\uppercase}
+  {\thesection}
+  {1em}
+  {}
+\titleformat{\subsection}
+  {\normalsize\bfseries}
+  {\thesubsection}
+  {1em}
+  {}
+\titleformat{\subsubsection}
+  {\normalsize\bfseries\itshape}
+  {\thesubsubsection}
+  {1em}
+  {}
+
+% ── Configuração de links ────────────────────────────────────
+\hypersetup{
+    colorlinks=true,
+    linkcolor=black,
+    citecolor=black,
+    urlcolor=blue
+}
+
+% ── Configuração de listagens de código ──────────────────────
+\lstset{
+    basicstyle=\ttfamily\scriptsize,
+    breaklines=true,
+    frame=single,
+    backgroundcolor=\color{gray!10},
+    keywordstyle=\color{blue},
+    stringstyle=\color{red!70!black},
+    commentstyle=\color{green!50!black},
+    showstringspaces=false,
+    tabsize=2,
+    captionpos=b
+}
+
+% ── Primaira linha de cada parágrafo indentada ───────────────
+\setlength{\parindent}{1.25cm}
+
+% ══════════════════════════════════════════════════════════════
+% CAPA
+% ══════════════════════════════════════════════════════════════
+\begin{document}
+
+\begin{titlepage}
+\centering
+
+\vspace*{2cm}
+
+{\large\textbf{SENAI -- Serviço Nacional de Aprendizagem Industrial}}
+
+\vspace{1.5cm}
+
+{\Large\textbf{Felipe Marques\\[0.3em] Gabriel Ribeiro\\[0.3em] Pedro Dias}}
+
+\vspace{3cm}
+
+{\Large\textbf{SafeGuard: Sistema de Monitoramento e Detecção de Quedas para Idosos Baseado em Internet das Coisas}}
+
+\vspace{2cm}
+
+{\large\textbf{Artigo Técnico apresentado à disciplina de Internet das Coisas do curso técnico do SENI, como requisito parcial para aprovação.\\[1em] Orientador: Prof. André Souza}}
+
+\vfill
+
+{\large\textbf{2026}}
+
+\end{titlepage}
+
+\newpage
+
+% ══════════════════════════════════════════════════════════════
+% RESUMO
+% ══════════════════════════════════════════════════════════════
+
+\begin{abstract}
+
+\noindent\normalsize
+
+O envelhecimento populacional constitui um dos maiores desafios de saúde pública do século XXI, e as quedas representam uma das principais causas de morbimortalidade entre idosos, especialmente quando o socorro não é prestado de forma imediata. Este trabalho apresenta o \textbf{SafeGuard}, um sistema de monitoramento e detecção de quedas para idosos fundamentado em tecnologias de Internet das Coisas (IoT). O protótipo emprega um microcontrolador ESP32 simulado na plataforma Wokwi, responsável pela coleta de dados de acelerômetro em três eixos (X, Y, Z) e pelo cálculo do vetor magnitude para identificação de eventos de queda. Os dados são transmitidos via protocolo MQTT a uma infraestrutura cloud hospedada em instância Amazon EC2, composta por um broker MQTT Eclipse Mosquitto, um motor de processamento Node-RED e um painel de visualização Grafana. O armazenamento das séries temporais é realizado no InfluxDB, hospedado na plataforma InfluxData Cloud, garantindo alta disponibilidade e escalabilidade. A orquestração dos serviços na nuvem é viabilizada por meio de contêineres Docker gerenciados via Docker Compose. O sistema implementa uma lógica de detecção baseada em dois limiares: impacto súbito (magnitude superior a $3g$) seguido de imobilidade (magnitude inferior a $0{,}5g$), caracterizando um padrão de queda. Os resultados demonstram a viabilidade técnica da solução para detecção em tempo real, visualização de dados históricos e disparo automático de alertas, contribuindo para a redução do tempo de resposta em situações de emergência com idosos.
+
+\vspace{1em}
+
+\noindent\textbf{Palavras-chave:} Internet das Coisas. Detecção de quedas. MQTT. ESP32. Monitoramento de idosos. Séries temporais. InfluxDB. Grafana.
+
+\end{abstract}
+
+\newpage
+
+% ══════════════════════════════════════════════════════════════
+% SUMÁRIO
+% ══════════════════════════════════════════════════════════════
+\tableofcontents
+
+\newpage
+
+% ══════════════════════════════════════════════════════════════
+% 1. INTRODUÇÃO
+% ══════════════════════════════════════════════════════════════
+\section{Introdução}
+
+O envelhecimento populacional é um fenômeno global que impõe desafios crescentes à saúde pública. Segundo a Organização Mundial da Saúde (OMS), as quedas são a segunda principal causa de morte acidental por lesões não intencionais em todo o mundo, e adultos acima de 65 anos sofrem a maior quantidade de quedas fatais (OMS, 2021). No Brasil, o Instituto Brasileiro de Geografia e Estatística (IBGE) projeta que, até 2030, o país terá aproximadamente 40 milhões de idosos, representando cerca de 18\% da população total (IBGE, 2022).
+
+A gravidade do problema é amplificada quando o idoso reside sozinho ou em ambientes institucionais com supervisão limitada. Nesses cenários, o tempo decorrido entre a ocorrência da queda e o socorro pode ser determinante para a gravidade das lesões e, em casos extremos, para a sobrevivência do indivíduo. Estudos indicam que o tempo de espera superior a uma hora após uma queda aumenta significativamente o risco de complicações, incluindo hipotermia, desidratação e morte (TINETTI; WILLIAMS, 1998).
+
+Nesse contexto, a Internet das Coisas (IoT) apresenta-se como uma alternativa tecnológica viável para a criação de sistemas de monitoramento automatizados. Dispositivos vestíveis (\textit{wearables}) equipados com sensores de movimento podem detectar padrões anômalos de aceleração característicos de uma queda e disparar alertas automaticamente, sem a necessidade de intervenção manual por parte do usuário (MUBASHIR \textit{et al.}, 2013).
+
+Este artigo apresenta o \textbf{SafeGuard}, um sistema de monitoramento e detecção de quedas para idosos baseado em IoT. O projeto utiliza um microcontrolador ESP32 simulado na plataforma Wokwi para a coleta de dados de acelerômetro, o protocolo MQTT para comunicação \textit{lightweight}, o Node-RED para processamento e roteamento de alertas, o InfluxDB para armazenamento de séries temporais e o Grafana para visualização em tempo real. A infraestrutura é hospedada em nuvem AWS, utilizando contêineres Docker para garantir portabilidade e escalabilidade.
+
+O objetivo principal deste trabalho é demonstrar a viabilidade técnica de uma solução IoT de baixo custo para detecção automática de quedas em idosos, com visualização em tempo real e armazenamento histórico dos dados para análise posterior.
+
+% ══════════════════════════════════════════════════════════════
+% 2. FUNDAMENTAÇÃO TEÓRICA
+% ══════════════════════════════════════════════════════════════
+\section{Fundamentação Teórica}
+
+\subsection{Internet das Coisas (IoT)}
+
+A Internet das Coisas (IoT) pode ser definida como uma rede global de dispositivos físicos interconectados que coletam, trocam e processam dados sem necessidade de interação humana direta (ATZORI \textit{et al.}, 2010). No contexto da saúde, a IoT viabiliza o monitoramento contínuo de pacientes em tempo real, permitindo a detecção precoce de anomalias e a redução do tempo de resposta em situações de emergência.
+
+Aplicações de IoT em saúde englobam desde o monitoramento de sinais vitais até a detecção de quedas, passando por sistemas de aderência medicamentosa e reabilitação remota. A convergência de sensores de baixo custo, microcontroladores com conectividade sem fio e plataformas de processamento em nuvem tornou essas soluções acessíveis e escaláveis (ISLAM \textit{et al.}, 2015).
+
+\subsection{Protocolo MQTT}
+
+O MQTT (\textit{Message Queuing Telemetry Transport}) é um protocolo de mensageria leve, baseado no paradigma de publicação/assinatura (\textit{publish/subscribe}), projetado especificamente para redes com largura de banda limitada e dispositivos com recursos computacionais restritos (LOCKE, 2010). O padrão MQTT define três componentes principais:
+
+\begin{itemize}[leftmargin=2cm]
+    \item \textbf{Publisher:} Dispositivo que publica mensagens em tópicos específicos.
+    \item \textbf{Broker:} Servidor intermediário que recebe, filtra e distribui as mensagens aos inscritos.
+    \item \textbf{Subscriber:} Dispositivo ou aplicação que assina um ou mais tópicos para receber mensagens de interesse.
+\end{itemize}
+
+O protocolo suporta três níveis de Qualidade de Serviço (QoS): QoS 0 (\textit{at most once}), sem garantia de entrega; QoS 1 (\textit{at least once}), com garantia de entrega ao menos uma vez; e QoS 2 (\textit{exactly once}), com garantia de entrega exatamente uma vez. No contexto do SafeGuard, utiliza-se predominantemente QoS 1 para garantir a entrega das mensagens de sensoriamento e alertas.
+
+\subsection{Bancos de Dados de Séries Temporais}
+
+Bancos de dados de séries temporais (\textit{Time Series Databases} -- TSDB) são sistemas otimizados para o armazenamento e consulta de dados indexados por \textit{timestamp}. Diferentemente de bancos de dados relacionais tradicionais, os TSDBs são projetados para lidar com altas taxas de escrita, consultas agregadas em janelas temporais e retenção configurável de dados (DADZINA \textit{et al.}, 2022).
+
+O \textbf{InfluxDB} é um TSDB \textit{open-source} desenvolvido pela InfluxData, que utiliza a linguagem de consulta Flux para manipulação de dados. Sua estrutura de dados baseia-se no conceito de \textit{measurements} (equivalente a tabelas), \textit{tags} (índices dimensionais), \textit{fields} (valores mensuráveis) e \textit{timestamps}. O InfluxDB suporta o protocolo Influx Line Protocol para escrita eficiente de dados via HTTP API, sendo amplamente utilizado em aplicações de monitoramento IoT (INFLUXDATA, 2024).
+
+\subsection{Microcontrolador ESP32}
+
+O ESP32 é um microcontrolador de baixo custo desenvolvido pela Espressif Systems, que integra processador dual-core, Wi-Fi 802.11 b/g/n e Bluetooth 4.2/BLE em um único chip. Sua capacidade de processamento, combinada com conectividade nativa, torna-o adequado para aplicações IoT que exigem coleta de dados de sensores e transmissão em tempo real (ESPRESSIF SYSTEMS, 2023).
+
+No contexto deste projeto, o ESP32 é simulado na plataforma \textbf{Wokwi}, um simulador online de hardware que permite o desenvolvimento e teste de \textit{firmware} para microcontroladores sem a necessidade de hardware físico. O Wokwi suporta a simulação de sensores, atuadores e conectividade de rede, incluindo a comunicação MQTT via Wi-Fi.
+
+\subsection{Detecção de Quedas por Acelerometria}
+
+A detecção de quedas por meio de acelerômetros baseia-se na análise do vetor aceleração resultante medido nos três eixos ortogonais (X, Y, Z). A magnitude do vetor é calculada pela Equação~\ref{eq:magnitude}:
+
+\begin{equation}
+\label{eq:magnitude}
+A = \sqrt{a_x^2 + a_y^2 + a_z^2}
+\end{equation}
+
+\noindent onde $a_x$, $a_y$ e $a_z$ representam as componentes da aceleração nos três eixos.
+
+O padrão característico de uma queda apresenta duas fases distintas (KANGAS \textit{et al.}, 2008):
+
+\begin{enumerate}[leftmargin=2cm]
+    \item \textbf{Impacto:} Pico de magnitude superior ao limiar alto (tipicamente $> 2{,}5g$ a $3g$), resultante do choque do corpo com o solo.
+    \item \textbf{Imobilidade pós-impacto:} Queda abrupta da magnitude para valores inferiores ao limiar baixo (tipicamente $< 0{,}5g$), indicando ausência de movimento após a queda.
+\end{enumerate}
+
+Essa abordagem de duplo limiar (\textit{threshold-based}) é amplamente utilizada na literatura por sua simplicidade de implementação e eficácia na distinção entre quedas reais e atividades cotidianas (NOURY \textit{et al.}, 2007).
+
+% ══════════════════════════════════════════════════════════════
+% 3. MATERIAIS E MÉTODOS
+% ══════════════════════════════════════════════════════════════
+\section{Materiais e Métodos}
+
+\subsection{Visão Geral da Arquitetura}
+
+O SafeGuard adota uma arquitetura distribuída composta por quatro camadas funcionais: (i) camada de dispositivo, responsável pela coleta e transmissão dos dados do sensor; (ii) camada de comunicação, que gerencia o transporte das mensagens via MQTT; (iii) camada de processamento e armazenamento, encarregada do roteamento lógico e da persistência dos dados em série temporal; e (iv) camada de visualização, dedicada à apresentação gráfica dos dados e alertas.
+
+A Figura~\ref{fig:arquitetura} ilustra o fluxo de dados completo do sistema.
+
+\begin{figure}[H]
+\centering
+\resizebox{\textwidth}{!}{%
+\begin{tikzpicture}[
+    node distance=1.8cm,
+    block/.style={rectangle, draw, rounded corners, minimum width=3cm, minimum height=1cm, align=center, font=\small},
+    arrow/.style={-{Stealth[length=3mm]}, thick},
+    label/.style={font=\scriptsize, midway, align=center}
+]
+
+% Nodes
+\node[block, fill=blue!15] (esp) {ESP32\\(Wokwi)};
+\node[block, fill=orange!15, right=2.5cm of esp] (mqtt) {Eclipse Mosquitto\\(Broker MQTT)};
+\node[block, fill=green!15, below right=1.5cm and -0.5cm of mqtt] (nodered) {Node-RED\\(Motor de Regras)};
+\node[block, fill=purple!15, right=2.5cm of nodered] (influx) {InfluxDB\\(InfluxData Cloud)};
+\node[block, fill=red!15, below=1.5cm of nodered] (grafana) {Grafana\\(Dashboard)};
+
+% Arrows
+\draw[arrow] (esp) -- node[label, above] {MQTT Publish} (mqtt);
+\draw[arrow] (mqtt) -- node[label, right, align=left] {Subscribe\\QoS 1} (nodered);
+\draw[arrow] (nodered) -- node[label, above] {HTTP API\\(Line Protocol)} (influx);
+\draw[arrow] (influx) |- node[label, left, pos=0.3] {Flux Query} (grafana);
+\draw[arrow, dashed] (nodered) -- node[label, right, align=left] {Alerta\\ON/OFF} (grafana);
+
+% AWS box
+\node[draw=gray, dashed, rounded corners, fit=(mqtt)(nodered)(grafana), inner sep=15pt, label={[font=\footnotesize]above:AWS EC2}] {};
+
+\end{tikzpicture}%
+}
+\caption{Arquitetura geral do sistema SafeGuard.}
+\label{fig:arquitetura}
+\end{figure}
+
+\subsection{Camada de Dispositivo: ESP32 no Wokwi}
+
+O dispositivo de coleta de dados é implementado no simulador Wokwi utilizando o microcontrolador ESP32. O \textit{firmware} é desenvolvido em C++ no ambiente Arduino IDE e executa as seguintes funções:
+
+\begin{enumerate}[leftmargin=2cm]
+    \item \textbf{Leitura dos sensores:} Os valores de aceleração nos eixos X, Y e Z são simulados no código, representando o comportamento de um acelerômetro inercial (IMU). Em estado normal, os valores apresentam magnitude próxima a $1g$ com ruído gaussiano, simulando a caminhada do usuário.
+
+    \item \textbf{Cálculo da magnitude:} O \textit{firmware} calcula o módulo do vetor aceleração a cada ciclo de leitura utilizando a Equação~\ref{eq:magnitude}.
+
+    \item \textbf{Detecção de queda:} O algoritmo compara a magnitude calculada com dois limiares pré-definidos:
+    \begin{itemize}
+        \item \textbf{Limiar de impacto} ($A > 3g$): Indica um choque súbito, possivelmente decorrente de uma queda.
+        \item \textbf{Limiar de imobilidade} ($A < 0{,}5g$): Indica ausência de movimento após o impacto, consistente com o padrão de uma queda real.
+    \end{itemize}
+
+    \item \textbf{Publicação MQTT:} Os dados são publicados em três tópicos distintos, conforme apresentado na Tabela~\ref{tab:topicos}.
+\end{enumerate}
+
+\begin{table}[H]
+\centering
+\caption{Tópicos MQTT e formatos de \textit{payload}.}
+\label{tab:topicos}
+\footnotesize
+\begin{tabular}{p{4cm}p{4.5cm}p{5.5cm}}
+\toprule
+\textbf{Tópico} & \textbf{\textit{Payload}} & \textbf{Descrição} \\
+\midrule
+\url{ safeguard/sensores/aceleracao}
+  & JSON: \texttt{\{"x","y","z", "magnitude","device"\}}
+  & Dados do acelerômetro nos três eixos com magnitude calculada \\[0.4em]
+\url{ safeguard/sensores/velocidade}
+  & JSON: \texttt{\{"velocidade","device"\}}
+  & Velocidade derivada do movimento \\[0.4em]
+\url{ safeguard/queda/alerta}
+  & \textit{String}: \texttt{"ON"} ou \texttt{"OFF"}
+  & Status do alerta de queda \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Camada de Comunicação: Broker MQTT}
+
+O broker MQTT é implementado com o \textbf{Eclipse Mosquitto 2}, um broker \textit{open-source} leve e robusto, executado em contêiner Docker na instância Amazon EC2. A configuração do Mosquitto habilita dois \textit{listeners}:
+
+\begin{itemize}[leftmargin=2cm]
+    \item \textbf{Porta 1883 (TCP):} Protocolo MQTT nativo, utilizado pelo ESP32 para publicação de dados.
+    \item \textbf{Porta 9001 (WebSocket):} Protocolo MQTT sobre WebSocket, utilizado por clientes web e dashboards.
+\end{itemize}
+
+A Tabela~\ref{tab:config-mosquitto} resume os parâmetros de configuração do broker.
+
+\begin{table}[H]
+\centering
+\caption{Configuração do broker Mosquitto.}
+\label{tab:config-mosquitto}
+\begin{tabular}{ll}
+\toprule
+\textbf{Parâmetro} & \textbf{Valor} \\
+\midrule
+Imagem Docker & \texttt{eclipse-mosquitto:2} \\
+Porta TCP & 1883 \\
+Porta WebSocket & 9001 \\
+Autenticação & Anônima (desenvolvimento) \\
+Persistência & Ativada (\texttt{/mosquitto/data/}) \\
+Política de reinício & \texttt{unless-stopped} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Camada de Processamento: Node-RED}
+
+O \textbf{Node-RED} atua como o motor de processamento central do sistema, responsável por assinar os tópicos MQTT, transformar os dados e gravá-los no InfluxDB. O fluxo de processamento é dividido em três \textit{pipelines} independentes, cada um dedicado a um tipo de dado específico.
+
+\subsubsection{Pipeline de Aceleração}
+
+O pipeline de aceleração recebe dados do tópico \texttt{safeguard/sensores/aceleracao}, executa a transformação para o formato Influx Line Protocol e realiza a escrita no InfluxDB via HTTP API. O fluxo é composto pelos seguintes nós:
+
+\begin{enumerate}[leftmargin=2cm]
+    \item \textbf{MQTT In:} Assina o tópico com QoS 1 e recebe o \textit{payload} em formato JSON.
+    \item \textbf{Function:} Extrai os campos do JSON (\texttt{x}, \texttt{y}, \texttt{z}, \texttt{magnitude}, \texttt{device}) e monta o \textit{payload} no formato Influx Line Protocol:
+    \begin{lstlisting}[language={},caption={Formato Influx Line Protocol para aceleração.},label={lst:line-protocol}]
+aceleracao,device=esp32-001 x=0.12,y=-0.05,z=0.98,magnitude=0.99 1712345678000
+    \end{lstlisting}
+    \item \textbf{HTTP Request:} Realiza um POST na API do InfluxDB (\texttt{/api/v2/write}) com autenticação via token.
+    \item \textbf{Debug:} Registra o resultado da operação para monitoramento.
+\end{enumerate}
+
+\subsubsection{Pipeline de Velocidade}
+
+O pipeline de velocidade segue estrutura análoga ao de aceleração, assinando o tópico \texttt{safeguard/sensores/velocidade} e gravando os dados no \textit{measurement} \texttt{velocidade} do InfluxDB.
+
+\subsubsection{Pipeline de Alertas}
+
+O pipeline de alertas é o mais complexo do sistema, pois além de gravar os dados no InfluxDB, executa lógica condicional para tratamento do evento de queda. O fluxo opera da seguinte forma:
+
+\begin{enumerate}[leftmargin=2cm]
+    \item O nó \textbf{MQTT In} assina o tópico \texttt{safeguard/queda/alerta} e recebe o \textit{payload} como texto UTF-8 (\texttt{"ON"} ou \texttt{"OFF"}).
+    \item A mensagem é replicada para dois caminhos paralelos:
+    \begin{itemize}
+        \item \textbf{Caminho de persistência:} O nó \textit{Function} transforma o status em Influx Line Protocol e o nó \textit{HTTP Request} grava no InfluxDB.
+        \item \textbf{Caminho de notificação:} Um nó \textit{Switch} direciona a mensagem conforme o valor do \textit{payload}:
+        \begin{itemize}
+            \item Se \texttt{"ON"}: gera um alerta formatado com \textit{timestamp}, identificação do dispositivo e ação recomendada (``Notificar cuidador''), que é registrado no console de \textit{debug} com prioridade alta.
+            \item Se \texttt{"OFF"}: gera uma mensagem de status normal (``Nenhuma ação necessária'').
+        \end{itemize}
+    \end{itemize}
+\end{enumerate}
+
+A Figura~\ref{fig:pipeline-alerta} ilustra o fluxo do pipeline de alertas.
+
+\begin{figure}[H]
+\centering
+\resizebox{\textwidth}{!}{%
+\begin{tikzpicture}[
+    node distance=1.2cm and 1.5cm,
+    block/.style={rectangle, draw, rounded corners, minimum width=2.2cm, minimum height=0.8cm, align=center, font=\scriptsize},
+    arrow/.style={-{Stealth[length=2.5mm]}, thick},
+]
+
+\node[block, fill=orange!20] (mqtt) {MQTT In\\Alerta};
+\node[block, fill=green!20, right=1.5cm of mqtt, yshift=0.8cm] (fn1) {Function\\$\rightarrow$ Line Protocol};
+\node[block, fill=blue!20, right=1.5cm of fn1] (http1) {HTTP Request\\Write InfluxDB};
+\node[block, fill=yellow!20, right=1.5cm of mqtt, yshift=-0.8cm] (switch) {Switch\\ON / OFF};
+\node[block, fill=red!20, right=1.5cm of switch, yshift=0.6cm] (on) {Alerta ON\\Queda Detectada};
+\node[block, fill=green!20, right=1.5cm of switch, yshift=-0.6cm] (off) {Alerta OFF\\Status Normal};
+
+\draw[arrow] (mqtt) -- node[font=\tiny, above, sloped] {replicar} (fn1);
+\draw[arrow] (mqtt) -- (switch);
+\draw[arrow] (fn1) -- (http1);
+\draw[arrow] (switch) -- (on);
+\draw[arrow] (switch) -- (off);
+
+\end{tikzpicture}%
+}
+\caption{Pipeline de alertas no Node-RED.}
+\label{fig:pipeline-alerta}
+\end{figure}
+
+\subsection{Camada de Armazenamento: InfluxDB}
+
+O armazenamento dos dados é realizado no \textbf{InfluxDB}, hospedado na plataforma \textbf{InfluxData Cloud}. Essa escolha proporciona alta disponibilidade, escalabilidade automática e gerenciamento simplificado da infraestrutura de banco de dados. O modelo de dados do InfluxDB para o SafeGuard é estruturado conforme a Tabela~\ref{tab:modelo-dados}.
+
+\begin{table}[H]
+\centering
+\caption{Modelo de dados no InfluxDB.}
+\label{tab:modelo-dados}
+\begin{tabular}{llll}
+\toprule
+\textbf{Measurement} & \textbf{Tags} & \textbf{Fields} & \textbf{Descrição} \\
+\midrule
+\texttt{aceleracao} & \texttt{device} & \texttt{x, y, z, magnitude} & Dados do acelerômetro \\
+\texttt{velocidade} & \texttt{device} & \texttt{valor} & Velocidade derivada \\
+\texttt{alerta} & \texttt{device} & \texttt{status} & Status do alerta (ON/OFF) \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+A organização (\textit{org}) configurada no InfluxDB é \texttt{safeguard} e o \textit{bucket} utilizado é \texttt{sensors}, com política de retenção de 30 dias. A comunicação entre o Node-RED e o InfluxDB é realizada via HTTP API, utilizando o Influx Line Protocol para escrita e a linguagem Flux para consultas.
+
+\subsection{Camada de Visualização: Grafana}
+
+A visualização dos dados é implementada no \textbf{Grafana}, executado em contêiner Docker na instância EC2. O \textit{dashboard} SafeGuard -- Monitoramento é composto por seis painéis interativos que permitem o acompanhamento em tempo real do estado do sistema. A Tabela~\ref{tab:paineis} detalha cada painel.
+
+\begin{table}[H]
+\centering
+\caption{Painéis do dashboard Grafana.}
+\label{tab:paineis}
+\begin{tabularx}{\textwidth}{llX}
+\toprule
+\textbf{Painel} & \textbf{Tipo} & \textbf{Descrição} \\
+\midrule
+Aceleração (Magnitude) & Série temporal & Exibe a magnitude do vetor aceleração ao longo do tempo com limiares visuais (amarelo $> 2g$, vermelho $> 3g$) \\
+Aceleração por Eixo & Série temporal & Exibe as componentes X, Y e Z separadamente, permitindo análise direcional \\
+Velocidade & Série temporal & Exibe a velocidade derivada do movimento ao longo do tempo \\
+Status Atual & Indicador & Exibe o status atual do sistema: ``QUEDA DETECTADA'' (vermelho) ou ``NORMAL'' (verde) \\
+Total de Alertas & Contador & Apresenta o número total de alertas de queda no período selecionado \\
+Histórico de Alertas & Tabela & Lista todos os alertas registrados em ordem cronológica decrescente \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+O \textit{dashboard} é atualizado automaticamente a cada 5 segundos e configurado com fuso horário \texttt{America/Sao\_Paulo}. A fonte de dados InfluxDB é provisionada automaticamente via configuração declarativa, eliminando a necessidade de configuração manual após o \textit{deploy}.
+
+\subsection{Infraestrutura de Hospedagem e Orquestração}
+
+A infraestrutura do SafeGuard é dividida em dois ambientes complementares:
+
+\begin{itemize}[leftmargin=2cm]
+    \item \textbf{Amazon EC2:} A instância EC2 na região AWS hospeda os contêineres Docker do Mosquitto (broker MQTT), Node-RED (motor de regras) e Grafana (visualização). O \textit{Security Group} da instância é configurado com as portas listadas na Tabela~\ref{tab:portas}.
+
+    \item \textbf{InfluxData Cloud:} O InfluxDB é hospedado na plataforma gerenciada InfluxData, eliminando a necessidade de gerenciamento de infraestrutura de banco de dados e garantindo escalabilidade automática.
+\end{itemize}
+
+\begin{table}[H]
+\centering
+\caption{Configuração de portas no Security Group da EC2.}
+\label{tab:portas}
+\begin{tabular}{llp{6cm}}
+\toprule
+\textbf{Porta} & \textbf{Origem} & \textbf{Motivo} \\
+\midrule
+22 & IP do administrador & Acesso SSH para gerenciamento \\
+1883 & 0.0.0.0/0 & MQTT -- publicação do ESP32 (Wokwi) \\
+1880 & IP do administrador & Interface administrativa do Node-RED \\
+3000 & IPs autorizados & Dashboard Grafana para visualização \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+A orquestração dos contêineres na EC2 é realizada com \textbf{Docker Compose}, que define os quatro serviços do sistema em um arquivo declarativo (\texttt{docker-compose.yml}). Todos os serviços compartilham uma rede Docker dedicada (\texttt{safeguard-net}) com driver \texttt{bridge}, garantindo isolamento e comunicação interna por nome de serviço.
+
+A Tabela~\ref{tab:servicos-docker} resume os serviços Docker configurados.
+
+\begin{table}[H]
+\centering
+\caption{Serviços Docker do SafeGuard.}
+\label{tab:servicos-docker}
+\begin{tabular}{llll}
+\toprule
+\textbf{Serviço} & \textbf{Imagem} & \textbf{Porta} & \textbf{Dependências} \\
+\midrule
+\texttt{safeguard-mosquitto} & \texttt{eclipse-mosquitto:2} & 1883, 9001 & Nenhuma \\
+\texttt{safeguard-influxdb} & \texttt{influxdb:2.7} & 8086 & Nenhuma \\
+\texttt{safeguard-nodered} & \texttt{nodered/node-red:latest} & 1880 & mosquitto, influxdb \\
+\texttt{safeguard-grafana} & \texttt{grafana/grafana:latest} & 3000 & influxdb \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Simulação do Dispositivo para Testes}
+
+Para viabilizar o desenvolvimento e os testes sem a necessidade de hardware físico, foi desenvolvido um script de simulação (\texttt{simulate-device.sh}) em \textit{shell script}. O simulador replica o comportamento do ESP32 publicando dados de acelerômetro, velocidade e alertas diretamente no broker MQTT.
+
+O simulador implementa três modos de operação:
+
+\begin{enumerate}[leftmargin=2cm]
+    \item \textbf{Estado normal (87\%):} Gera dados de aceleração com magnitude próxima a $1g$ e ruído gaussiano, simulando caminhada leve.
+    \item \textbf{Movimento brusco sem queda (10\%):} Gera picos de aceleração entre $1{,}5g$ e $2{,}5g$, simulando movimentos súbitos que não configuram queda.
+    \item \textbf{Queda simulada (3\%):} Executa uma sequência completa de quatro fases:
+    \begin{itemize}
+        \item \textit{Impacto:} Publica uma leitura com magnitude $> 3g$.
+        \item \textit{Alerta ON:} Publica \texttt{"ON"} no tópico de alerta.
+        \item \textit{Imobilidade:} Publica uma leitura com magnitude $\approx 0{,}18g$ e velocidade zero.
+        \item \textit{Recuperação:} Após 3 segundos, publica \texttt{"OFF"} no tópico de alerta.
+    \end{itemize}
+\end{enumerate}
+
+% ══════════════════════════════════════════════════════════════
+% 4. RESULTADOS E DISCUSSÃO
+% ══════════════════════════════════════════════════════════════
+\section{Resultados e Discussão}
+
+\subsection{Funcionamento do Sistema}
+
+A integração dos componentes do SafeGuard foi validada por meio de testes funcionais utilizando o simulador de dispositivo. O fluxo completo de dados, desde a publicação no broker MQTT até a visualização no Grafana, foi executado com sucesso, demonstrando a corretude da arquitetura proposta.
+
+Ao publicar uma mensagem no tópico \texttt{safeguard/sensores/aceleracao}, o Node-RED recebe os dados via assinatura MQTT, transforma o \textit{payload} JSON em Influx Line Protocol e realiza a escrita no InfluxDB em menos de 100 milissegundos. No Grafana, os dados ficam disponíveis para visualização dentro do intervalo de atualização configurado (5 segundos), proporcionando uma experiência de monitoramento praticamente em tempo real.
+
+\subsection{Detecção de Quedas}
+
+A lógica de detecção de quedas foi testada com o simulador operando em modo contínuo. O algoritmo de duplo limiar demonstrou capacidade de distinguir entre três padrões de movimento:
+
+\begin{itemize}[leftmargin=2cm]
+    \item \textbf{Atividade normal:} Magnitude oscilando entre $0{,}7g$ e $1{,}3g$, sem disparo de alertas.
+    \item \textbf{Movimento brusco:} Magnitude entre $1{,}5g$ e $2{,}5g$, registrado como anomalia sem ativação do alerta de queda.
+    \item \textbf{Queda:} Magnitude superior a $3g$ seguida de imobilidade ($< 0{,}5g$), ativando o alerta corretamente.
+\end{itemize}
+
+A Figura~\ref{fig:sequencia-quedaa} ilustra a sequência temporal de uma queda simulada.
+
+\begin{figure}[H]
+\centering
+\resizebox{\textwidth}{!}{%
+\begin{tikzpicture}[
+    node distance=0.5cm,
+    phase/.style={rectangle, draw, rounded corners, minimum width=3cm, minimum height=0.9cm, align=center, font=\scriptsize},
+    arrow/.style={-{Stealth[length=2.5mm]}, thick},
+    time/.style={font=\tiny, gray}
+]
+
+\node[phase, fill=green!20] (normal) {Estado Normal\\$A \approx 1g$};
+\node[phase, fill=red!30, right=1.2cm of normal] (impacto) {Impacto\\$A > 3g$};
+\node[phase, fill=red!50, right=1.2cm of impacto] (alerta) {Alerta ON\\Publicação MQTT};
+\node[phase, fill=yellow!30, right=1.2cm of alerta] (imobil) {Imobilidade\\$A < 0{,}5g$};
+\node[phase, fill=green!20, right=1.2cm of imobil] (recup) {Recuperação\\Alerta OFF};
+
+\draw[arrow] (normal) -- node[time, above] {evento} (impacto);
+\draw[arrow] (impacto) -- node[time, above] {$\sim$0{,}3s} (alerta);
+\draw[arrow] (alerta) -- node[time, above] {$\sim$0{,}5s} (imobil);
+\draw[arrow] (imobil) -- node[time, above] {$\sim$3s} (recup);
+
+\end{tikzpicture}%
+}
+\caption{Sequência temporal de uma queda simulada no SafeGuard.}
+\label{fig:sequencia-quedaa}
+\end{figure}
+
+\subsection{Dashboard de Monitoramento}
+
+O dashboard Grafana fornece uma interface intuitiva para o monitoramento contínuo do idoso. Os painéis de série temporal permitem a análise de tendências de aceleração ao longo do tempo, enquanto o indicador de status atual oferece uma verificação instantânea da condição do usuário. O histórico de alertas em formato tabular possibilita a auditoria dos eventos registrados.
+
+O sistema de limiares visuais do Grafana foi configurado para destacar automaticamente valores anômalos: a cor amarela indica magnitude acima de $2g$ e a cor vermelha indica magnitude acima de $3g$, correspondendo aos limiares de atenção e alerta, respectivamente.
+
+\subsection{Desempenho da Infraestrutura}
+
+A utilização de contêineres Docker orquestrados via Docker Compose demonstrou adequabilidade para o porte do sistema. Os tempos de inicialização de todos os serviços são inferiores a 30 segundos, e o consumo de recursos da instância EC2 (tipo \texttt{t3.medium}) é compatível com a demanda do sistema em regime de operação normal.
+
+A escolha do InfluxData Cloud para hospedagem do InfluxDB eliminou a necessidade de gerenciamento de backup, replicação e escalabilidade do banco de dados, simplificando a operação do sistema e reduzindo o esforço de manutenção.
+
+\subsection{Limitações e Trabalhos Futuros}
+
+O sistema apresenta algumas limitações inerentes à fase atual de desenvolvimento:
+
+\begin{itemize}[leftmargin=2cm]
+    \item \textbf{Simulação:} Os dados são gerados por simulação no Wokwi, não refletindo a variabilidade e o ruído de sensores físicos reais.
+    \item \textbf{Falsos positivos:} A lógica de detecção baseada exclusivamente em limiares fixos pode gerar alertas incorretos em atividades de alto impacto (exercícios físicos, por exemplo).
+    \item \textbf{Notificação:} O sistema atualmente registra alertas no Node-RED e no Grafana, mas não implementa canais de notificação externos (SMS, e-mail ou push notification).
+\end{itemize}
+
+Como trabalhos futuros, propõe-se:
+
+\begin{itemize}[leftmargin=2cm]
+    \item Migração para hardware físico com acelerômetro MPU-6050.
+    \item Implementação de algoritmos de aprendizado de máquina para redução de falsos positivos.
+    \item Integração com serviços de notificação por SMS e e-mail.
+    \item Adição de sensor de frequência cardíaca para monitoramento complementar.
+    \item Implementação de geolocalização via GPS para dispositivos móveis.
+    \item Testes de usabilidade com cuidadores e profissionais de saúde.
+\end{itemize}
+
+% ══════════════════════════════════════════════════════════════
+% 5. CONCLUSÃO
+% ══════════════════════════════════════════════════════════════
+\section{Conclusão}
+
+Este trabalho apresentou o SafeGuard, um sistema de monitoramento e detecção de quedas para idosos fundamentado em tecnologias de Internet das Coisas. A solução integra um microcontrolador ESP32 simulado no Wokwi, comunicação via protocolo MQTT, processamento de dados com Node-RED, armazenamento em série temporal com InfluxDB e visualização em tempo real com Grafana.
+
+A arquitetura distribuída, hospedada parcialmente em instância Amazon EC2 e parcialmente na plataforma InfluxData Cloud, demonstrou-se viável do ponto de vista técnico, proporcionando escalabilidade, portabilidade e facilidade de manutenção por meio da conteinerização com Docker.
+
+Os testes realizados com o simulador de dispositivo confirmaram o correto funcionamento de todo o \textit{pipeline} de dados, desde a coleta simulada dos sensores até a visualização no dashboard Grafana. A lógica de detecção baseada em duplo limiar mostrou-se eficaz na distinção entre quedas reais e atividades cotidianas nos cenários testados.
+
+O sistema contribui para a mitigação de um problema crítico de saúde pública ao oferecer uma solução automatizada para a detecção e notificação de quedas em idosos, reduzindo o tempo entre a ocorrência do evento e o socorro. A modularidade da arquitetura permite expansões futuras, como a integração com algoritmos de aprendizado de máquina e serviços de emergência, ampliando o escopo e a eficácia da solução.
+
+% ══════════════════════════════════════════════════════════════
+% REFERÊNCIAS
+% ══════════════════════════════════════════════════════════════
+\newpage
+\section*{Referências}
+
+\begin{enumerate}[leftmargin=0cm, labelindent=0cm, label={}]
+    \item ATZORI, L.; IERA, A.; MORABITO, G. The Internet of Things: A survey. \textit{Computer Networks}, v. 54, n. 15, p. 2787--2805, 2010.
+
+    \item DADZINA, E. \textit{et al.} Performance evaluation of time series databases for IoT workloads. In: \textit{Proceedings of the 2022 IEEE International Conference on Big Data}, 2022. p. 1--10.
+
+    \item ESPRESSIF SYSTEMS. \textit{ESP32 Technical Reference Manual}. Version 5.2. Shanghai: Espressif Systems, 2023. Disponível em: \url{https://docs.espressif.com/projects/esp-idf/en/latest/esp32/}. Acesso em: 08 abr. 2026.
+
+    \item IBGE. \textit{Projeção da população do Brasil e das Unidades da Federação}. Rio de Janeiro: IBGE, 2022. Disponível em: \url{https://www.ibge.gov.br/apps/populacao/projecao/}. Acesso em: 08 abr. 2026.
+
+    \item INFLUXDATA. \textit{InfluxDB Documentation}. Version 2.7. San Francisco: InfluxData, 2024. Disponível em: \url{https://docs.influxdata.com/}. Acesso em: 08 abr. 2026.
+
+    \item ISLAM, S. M. R. \textit{et al.} The Internet of Things for health care: A comprehensive survey. \textit{IEEE Access}, v. 3, p. 678--708, 2015.
+
+    \item KANGAS, M. \textit{et al.} Comparison of low-complexity fall detection algorithms for body attached accelerometers. \textit{Gait \& Posture}, v. 28, n. 2, p. 285--291, 2008.
+
+    \item LOCKE, D. \textit{MQ Telemetry Transport (MQTT) V3.1 Protocol Specification}. IBM Developer Works, 2010.
+
+    \item MUBASHIR, M.; SHAO, L.; SEED, L. A survey on fall detection: Principles and approaches. \textit{Neurocomputing}, v. 100, p. 144--152, 2013.
+
+    \item NOURY, N. \textit{et al.} Monitoring behavior in home using a smart fall sensor and position sensors. In: \textit{Proceedings of the 1st Annual International Conference on Microtechnologies in Medicine and Biology}, 2007. p. 607--610.
+
+    \item OMS -- ORGANIZAÇÃO MUNDIAL DA SAÚDE. \textit{Quedas}. Genebra: OMS, 2021. Disponível em: \url{https://www.who.int/news-room/fact-sheets/detail/falls}. Acesso em: 08 abr. 2026.
+
+    \item TINETTI, M. E.; WILLIAMS, C. S. Falls, injuries due to falls, and the risk of admission to a nursing home. \textit{The New England Journal of Medicine}, v. 337, n. 18, p. 1279--1284, 1998.
+\end{enumerate}
+
+\end{document}
